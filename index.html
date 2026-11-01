@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Scroll – Smart Educational Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --app-bg-dark: #07070a;
+            --accent-purple: #a855f7;
+            --accent-pink: #ec4899;
+        }
+        * { font-family: 'Inter', sans-serif; }
+        body {
+            background-color: var(--app-bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.08) 0%, transparent 50%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        /* --- Custom Speeder Loading Animation Styles --- */
+        #app-loader {
+            background-color: var(--app-bg-dark);
+            transition: opacity 0.5s ease;
+        }
+        .loader-speeder-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 100px;
+        }
+        .body-anim {
+            position: absolute;
+            top: 50%;
+            margin-left: -50px;
+            left: 50%;
+            animation: speeder .4s linear infinite;
+        }
+        .body-anim > span {
+            height: 5px;
+            width: 35px;
+            background: #a855f7;
+            position: absolute;
+            top: -19px;
+            left: 60px;
+            border-radius: 2px 10px 1px 0;
+        }
+        .base span {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-right: 100px solid #a855f7;
+            border-bottom: 6px solid transparent;
+        }
+        .base span:before {
+            content: "";
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: #a855f7;
+            position: absolute;
+            right: -110px;
+            top: -16px;
+        }
+        .base span:after {
+            content: "";
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-top: 0 solid transparent;
+            border-right: 55px solid #a855f7;
+            border-bottom: 16px solid transparent;
+            top: -16px;
+            right: -98px;
+        }
+        .face-anim {
+            position: absolute;
+            height: 12px;
+            width: 20px;
+            background: #a855f7;
+            border-radius: 20px 20px 0 0;
+            transform: rotate(-40deg);
+            right: -125px;
+            top: -15px;
+        }
+        .face-anim:after {
+            content: "";
+            height: 12px;
+            width: 12px;
+            background: #a855f7;
+            right: 4px;
+            top: 7px;
+            position: absolute;
+            transform: rotate(40deg);
+            transform-origin: 50% 50%;
+            border-radius: 0 0 0 2px;
+        }
+        .body-anim > span > span {
+            width: 30px;
+            height: 1px;
+            background: #a855f7;
+            position: absolute;
+            display: block;
+        }
+        .body-anim > span > span:nth-child(1) { animation: fazer1 .2s linear infinite; }
+        .body-anim > span > span:nth-child(2) { top: 3px; animation: fazer2 .4s linear infinite; }
+        .body-anim > span > span:nth-child(3) { top: 1px; animation: fazer3 .4s linear infinite; animation-delay: -1s; }
+        .body-anim > span > span:nth-child(4) { top: 4px; animation: fazer4 1s linear infinite; animation-delay: -1s; }
+
+        @keyframes fazer1 { 0% { left: 0; } 100% { left: -80px; opacity: 0; } }
+        @keyframes fazer2 { 0% { left: 0; } 100% { left: -100px; opacity: 0; } }
+        @keyframes fazer3 { 0% { left: 0; } 100% { left: -50px; opacity: 0; } }
+        @keyframes fazer4 { 0% { left: 0; } 100% { left: -150px; opacity: 0; } }
+        @keyframes speeder {
+            0% { transform: translate(2px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -3px) rotate(-1deg); }
+            20% { transform: translate(-2px, 0px) rotate(1deg); }
+            30% { transform: translate(1px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 3px) rotate(-1deg); }
+            60% { transform: translate(-1px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-2px, -1px) rotate(1deg); }
+            90% { transform: translate(2px, 1px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .longfazers-anim {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        .longfazers-anim span {
+            position: absolute;
+            height: 2px;
+            width: 20%;
+            background: rgba(168, 85, 247, 0.4);
+        }
+        .longfazers-anim span:nth-child(1) { top: 20%; animation: lf .6s linear infinite; animation-delay: -5s; }
+        .longfazers-anim span:nth-child(2) { top: 40%; animation: lf2 .8s linear infinite; animation-delay: -1s; }
+        .longfazers-anim span:nth-child(3) { top: 60%; animation: lf3 .6s linear infinite; }
+        .longfazers-anim span:nth-child(4) { top: 80%; animation: lf4 .5s linear infinite; animation-delay: -3s; }
+
+        @keyframes lf { 0% { left: 200%; } 100% { left: -200%; opacity: 0; } }
+        @keyframes lf2 { 0% { left: 200%; } 100% { left: -200%; opacity: 0; } }
+        @keyframes lf3 { 0% { left: 200%; } 100% { left: -100%; opacity: 0; } }
+        @keyframes lf4 { 0% { left: 200%; } 100% { left: -100%; opacity: 0; } }
+        /* ---------------------------------------------------- */
+
+        .glass-panel {
+            background: rgba(18, 18, 26, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+        .glass-card {
+            background: rgba(22, 22, 33, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .floating-island {
+            background: rgba(18, 18, 26, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 2rem;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+        }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(100%) sepia(50%) saturate(500%) hue-rotate(220deg);
+            cursor: pointer;
+        }
+        
+        select option {
+            background-color: #12121a;
+            color: #e9edef;
+        }
+
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.15); transition: .3s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: #a855f7; }
+        input:checked + .slider:before { transform: translateX(20px); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.2); border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen text-[#e9edef] antialiased">
+
+    <!-- App Speeder Loading Screen (Clean, no text) -->
+    <div id="app-loader" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="longfazers-anim">
+            <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="loader-speeder-container">
+            <div class="body-anim">
+                <span>
+                    <span></span><span></span><span></span><span></span>
+                </span>
+                <div class="base">
+                    <span></span>
+                    <div class="face-anim"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="fixed inset-0 z-40 bg-[#07070a] flex items-center justify-center p-4 hidden">
+        <div class="glass-panel max-w-sm w-full p-8 space-y-6 text-center">
+            <div class="space-y-2">
+                <span class="text-4xl text-purple-400"><i class="fas fa-graduation-cap"></i></span>
+                <h2 id="auth-title" class="text-2xl font-bold text-white">Welcome back</h2>
+                <p id="auth-subtitle" class="text-xs text-gray-400">Sign in or create your account</p>
+            </div>
+
+            <form id="auth-form" class="space-y-4 text-left" onsubmit="handleAuthSubmit(event)">
+                <div id="username-field-container" class="hidden">
+                    <label class="block text-xs text-gray-400 mb-1">Unique Username</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2.5 text-purple-400 font-semibold">@</span>
+                        <input id="auth-username" type="text" class="w-full rounded-xl bg-white/5 border border-white/10 pl-8 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Your email address</label>
+                    <input id="auth-email" type="email" required class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Password</label>
+                    <input id="auth-password" type="password" required class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                </div>
+                
+                <div id="auth-error-msg" class="hidden text-xs text-rose-400 font-medium bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
+                    <i class="fas fa-exclamation-circle text-rose-400"></i>
+                    <span id="auth-error-text">Invalid credentials</span>
+                </div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-semibold py-2.5 text-sm transition shadow-lg shadow-purple-500/25">
+                    Continue
+                </button>
+            </form>
+
+            <div class="relative flex py-2 items-center">
+                <div class="flex-grow border-t border-white/10"></div>
+                <span class="flex-shrink mx-4 text-xs text-gray-500">Don't have an account</span>
+                <div class="flex-grow border-t border-white/10"></div>
+            </div>
+
+            <button onclick="loginWithGoogle()" class="w-full rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium py-2.5 text-sm transition flex items-center justify-center gap-2">
+                <i class="fab fa-google text-pink-400"></i> Continue with Google
+            </button>
+
+            <div class="text-center pt-2">
+                <button id="auth-switch-btn" type="button" class="text-xs text-purple-400 hover:underline" onclick="toggleAuthMode()">
+                    Create a new account
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="fixed top-0 inset-x-0 z-30 px-4 pt-4" role="banner">
+        <div class="max-w-6xl mx-auto glass-panel px-4 py-3 rounded-[2rem] flex items-center justify-between">
+            <a href="#dashboard" data-nav="dashboard" class="flex items-center gap-2.5">
+                <span class="text-2xl text-purple-400"><i class="fas fa-graduation-cap"></i></span>
+                <span class="font-bold text-lg text-white tracking-tight">E-Scroll</span>
+            </a>
+
+            <nav aria-label="Primary navigation" class="hidden md:block">
+                <ul id="desktop-nav" class="flex items-center gap-1"></ul>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <a href="#profile" data-nav="profile" class="flex items-center gap-2 group">
+                    <span id="header-username" class="hidden sm:block text-sm text-gray-300 group-hover:text-white transition">@user</span>
+                    <img id="header-avatar" src="" alt="Avatar" class="w-9 h-9 rounded-full object-cover border border-purple-500/30">
+                </a>
+                <button id="logout-btn" title="Logout" class="w-8 h-8 rounded-full bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 flex items-center justify-center transition">
+                    <i class="fas fa-sign-out-alt text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="pt-28 pb-28 md:pb-12 max-w-6xl mx-auto px-4">
+        <!-- Dashboard -->
+        <section id="dashboard" class="scroll-mt-28">
+            <div class="grid grid-cols-12 gap-5">
+                <div class="col-span-12">
+                    <h2 class="text-lg font-semibold mb-3 text-white">Today at a glance</h2>
+                    <div id="stats-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-5 mt-5">
+                <div class="col-span-12 glass-panel p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-lg font-semibold text-white">Study Time Analyzer</h2>
+                            <select id="timeframe-select" onchange="changeStudyTimeframe(this.value)" class="bg-[#12121a] text-xs text-purple-400 border border-purple-500/20 rounded-lg px-2 py-1 focus:outline-none cursor-pointer">
+                                <option value="7days">Last 7 days</option>
+                                <option value="monthly">Last Month</option>
+                                <option value="yearly">Last Year</option>
+                            </select>
+                        </div>
+                        <canvas id="studyChart" height="110"></canvas>
+                    </div>
+
+                    <form id="log-study-form" class="mt-4 pt-3 border-t border-white/10 grid grid-cols-3 gap-2 items-center" onsubmit="handleLogStudy(event)">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1">Select Day Slot</label>
+                            <select id="study-day-select" class="w-full rounded-xl bg-[#12121a] border border-purple-500/20 px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                                <option value="0">Monday</option>
+                                <option value="1">Tuesday</option>
+                                <option value="2">Wednesday</option>
+                                <option value="3">Thursday</option>
+                                <option value="4">Friday</option>
+                                <option value="5">Saturday</option>
+                                <option value="6">Sunday</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1">Hours</label>
+                            <input id="study-hours-input" type="number" step="0.5" min="0" max="24" required class="w-full rounded-xl bg-white/5 border border-purple-500/20 px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                        <div class="pt-3">
+                            <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white rounded-xl text-xs font-semibold py-2 transition shadow-md shadow-purple-500/20">Log Hours</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tasks Tab Section -->
+        <section id="tasks" class="hidden scroll-mt-28">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Study Tasks & Goals</h2>
+                    <p class="text-xs text-gray-400 mt-1">Organize your study routine with custom labels and due dates.</p>
+                </div>
+                <div class="flex gap-2">
+                    <select id="task-group-by" onchange="renderGoalsList()" class="bg-[#12121a] text-xs text-purple-400 border border-purple-500/20 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
+                        <option value="none">Group by: None</option>
+                        <option value="date">Group by: Due Date</option>
+                        <option value="label">Group by: Label</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-5">
+                <div class="col-span-12 lg:col-span-4 glass-panel p-5 h-fit">
+                    <h3 class="font-semibold text-white mb-3 text-sm flex items-center gap-2"><i class="fas fa-plus-circle text-purple-400"></i> Add New Task</h3>
+                    <form id="add-goal-form" class="space-y-3" onsubmit="handleAddGoal(event)">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1">Task Title</label>
+                            <input id="new-goal-title" type="text" placeholder="e.g. Complete Combined Maths Tutorial" required class="w-full rounded-xl bg-white/5 border border-purple-500/20 px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1">Label (Select or Type)</label>
+                                <input id="new-goal-label" list="labels-datalist" type="text" placeholder="e.g. Physics" required class="w-full rounded-xl bg-[#12121a] border border-purple-500/20 px-2 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                                <datalist id="labels-datalist">
+                                    <option value="General"></option>
+                                    <option value="Physics"></option>
+                                    <option value="Maths"></option>
+                                    <option value="ICT"></option>
+                                    <option value="Urgent"></option>
+                                </datalist>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 mb-1">Due Date</label>
+                                <input id="new-goal-date" type="date" required class="w-full rounded-xl bg-[#12121a] border border-purple-500/20 px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white py-2 rounded-xl text-xs font-semibold shadow-md shadow-purple-500/20">Add Task</button>
+                    </form>
+                </div>
+
+                <div class="col-span-12 lg:col-span-8 glass-panel p-5 flex flex-col">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-white text-sm flex items-center gap-2"><i class="fas fa-tasks text-purple-400"></i> Task List</h3>
+                        <span id="tasks-count" class="text-xs text-purple-400 font-medium">0 Tasks</span>
+                    </div>
+                    <div id="goals-list" class="space-y-4 flex-1 overflow-y-auto max-h-[500px] pr-1"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Leaderboard Section -->
+        <section id="leaderboard" class="hidden scroll-mt-28">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white"><i class="fas fa-trophy text-amber-400 mr-2"></i>Study Leaderboard</h2>
+                    <p id="season-banner-text" class="text-xs text-purple-300 mt-0.5 font-medium">Active Season: Loading...</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openLeaderboardInfoModal()" class="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-xs font-semibold border border-purple-500/30 transition flex items-center gap-1.5">
+                        <i class="fas fa-info-circle"></i> How LB Works
+                    </button>
+                    <div class="bg-[#12121a] p-1 rounded-xl border border-purple-500/20 flex gap-1 text-xs">
+                        <button onclick="changeLeaderboardTimeframe('daily')" id="lb-btn-daily" class="px-3 py-1.5 rounded-lg text-purple-300 bg-purple-600/20 font-medium">Daily</button>
+                        <button onclick="changeLeaderboardTimeframe('weekly')" id="lb-btn-weekly" class="px-3 py-1.5 rounded-lg text-gray-400 hover:text-white">Weekly</button>
+                        <button onclick="changeLeaderboardTimeframe('yearly')" id="lb-btn-yearly" class="px-3 py-1.5 rounded-lg text-gray-400 hover:text-white">Yearly</button>
+                    </div>
+                    <button onclick="loadLeaderboard()" class="text-xs text-purple-400 hover:underline px-2"><i class="fas fa-sync-alt mr-1"></i>Refresh</button>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6">
+                <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-left text-gray-400 border-b border-white/10">
+                                <th class="py-2.5 px-3 font-medium">Rank & Badge</th>
+                                <th class="py-2.5 px-3 font-medium">Student</th>
+                                <th class="py-2.5 px-3 font-medium">Stream</th>
+                                <th class="py-2.5 px-3 text-right font-medium">Study Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-table">
+                            <tr><td colspan="4" class="text-center text-gray-500 py-4 text-xs">Loading standings...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section id="analytics" class="hidden scroll-mt-28">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                <h2 class="text-2xl font-bold text-white">Analytics & Marks</h2>
+            </div>
+            
+            <div class="grid grid-cols-12 gap-5">
+                <div class="col-span-12 lg:col-span-5 glass-panel p-5 flex flex-col items-center justify-center">
+                    <h3 class="font-semibold text-white mb-2 text-sm">Subject Performance (Radar)</h3>
+                    <div class="w-full max-w-[280px]">
+                        <canvas id="marksChart" height="230"></canvas>
+                    </div>
+                </div>
+                
+                <div class="col-span-12 lg:col-span-7 glass-panel p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-semibold text-white text-sm">Subject Papers & Marks</h3>
+                            <span class="text-[10px] text-gray-400">Avg of last 3 papers used for radar</span>
+                        </div>
+                        <div class="overflow-x-auto max-h-56 overflow-y-auto pr-1">
+                            <div id="subjects-accordion" class="space-y-3"></div>
+                        </div>
+                    </div>
+                    
+                    <form id="add-subject-form" class="mt-4 pt-3 border-t border-white/10 grid grid-cols-3 gap-2" onsubmit="handleAddSubjectPaper(event)">
+                        <div>
+                            <input id="subj-name" list="subjects-datalist" type="text" placeholder="Subject Name" required class="w-full rounded-xl bg-[#12121a] border border-purple-500/20 px-2.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                            <datalist id="subjects-datalist"></datalist>
+                        </div>
+                        <div>
+                            <input id="paper-name" type="text" placeholder="Paper Name" required class="w-full rounded-xl bg-white/5 border border-purple-500/20 px-2.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                        <div class="flex gap-1">
+                            <input id="subj-marks" type="number" placeholder="Marks %" min="0" max="100" required class="w-full rounded-xl bg-white/5 border border-purple-500/20 px-2 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                            <button type="submit" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white rounded-xl text-xs px-3 font-semibold whitespace-nowrap">Add</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="mt-6 glass-panel p-6">
+                <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-chart-line text-purple-400 mr-2"></i>Subject Growth & Performance</h3>
+                <div id="subject-growth-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile" class="hidden scroll-mt-28">
+            <h2 class="text-2xl font-bold text-white mb-6">Your Profile</h2>
+            <div class="grid grid-cols-12 gap-5">
+                <div class="col-span-12 md:col-span-4 space-y-5">
+                    <div class="glass-panel p-6 text-center">
+                        <div class="relative w-28 h-28 mx-auto">
+                            <img id="profile-avatar" src="" class="w-28 h-28 rounded-full object-cover border-4 border-purple-500/40 shadow-lg shadow-purple-500/20">
+                            <label for="device-avatar-input" class="absolute bottom-0 right-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white w-8 h-8 rounded-full flex items-center justify-center cursor-pointer shadow-lg transition">
+                                <i class="fas fa-camera text-xs"></i>
+                                <input id="device-avatar-input" type="file" accept="image/*" class="hidden" onchange="uploadProfilePicture(event)">
+                            </label>
+                        </div>
+                        <h3 id="profile-name-display" class="text-xl font-semibold mt-4 text-white">Student Name</h3>
+                        <p id="profile-tag" class="text-sm text-purple-400 mt-1">@username</p>
+                        
+                        <div class="mt-3 flex justify-center">
+                            <span id="profile-league-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                <i class="fas fa-shield-alt mr-1"></i> Bronze League
+                            </span>
+                        </div>
+
+                        <p id="profile-bio-display" class="text-xs text-gray-300 mt-3 px-4 italic">No bio added yet.</p>
+                        <div class="mt-4 pt-3 border-t border-white/10 text-xs text-gray-400">
+                            Stream: <span id="profile-stream-display" class="text-purple-300 font-medium">Not set</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-5">
+                        <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2"><i class="fas fa-award text-amber-400"></i> Achievements & Badges (Unlocked)</h4>
+                        <div id="achievements-grid" class="grid grid-cols-2 gap-2 text-center"></div>
+                    </div>
+                </div>
+
+                <div class="col-span-12 md:col-span-8">
+                    <form id="profile-form" class="glass-panel p-6 space-y-4" onsubmit="handleSaveProfile(event)">
+                        <h3 class="font-semibold text-white text-lg border-b border-white/10 pb-2">Edit Profile Settings</h3>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Email Address</label>
+                            <input id="profile-email-input" type="email" disabled class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-gray-400">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Full Name</label>
+                                <input id="profile-name-input" type="text" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Unique Username (@handle)</label>
+                                <input id="profile-handle-input" type="text" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Study Stream</label>
+                            <input id="profile-stream-input" type="text" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                        
+                        <div class="space-y-3 pt-2">
+                            <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl">
+                                <span class="text-sm text-gray-200">Make Stream Public</span>
+                                <label class="switch">
+                                    <input id="profile-public-stream" type="checkbox">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl">
+                                <span class="text-sm text-purple-400 font-medium"><i class="fas fa-trophy mr-1"></i>Allow Leaderboard Competitions</span>
+                                <label class="switch">
+                                    <input id="profile-allow-leaderboard" type="checkbox">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Short Bio</label>
+                            <textarea id="profile-bio-input" rows="2" class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500"></textarea>
+                        </div>
+                        <button type="submit" id="profile-save-btn" class="rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-semibold text-sm px-6 py-2.5 transition shadow-lg shadow-purple-500/25">
+                            Save Profile
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-gray-500 text-xs mt-10">
+            <p>© 2026 E-Scroll · Smart Educational Hub</p>
+        </footer>
+    </main>
+
+    <!-- Mobile Nav -->
+    <nav aria-label="Mobile navigation" class="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 floating-island z-30 px-2 py-1.5">
+        <ul id="mobile-nav" class="flex items-center gap-1"></ul>
+    </nav>
+
+    <!-- Custom Themed Alert Modal -->
+    <div id="custom-alert-modal" class="fixed inset-0 z-50 bg-[#07070a]/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-panel max-w-sm w-full p-6 space-y-4 border border-purple-500/30 text-center relative shadow-2xl">
+            <div id="alert-icon" class="text-3xl text-amber-400 mb-1"><i class="fas fa-info-circle"></i></div>
+            <h3 id="alert-title" class="text-base font-bold text-white">Notice</h3>
+            <p id="alert-message" class="text-xs text-gray-300 leading-relaxed"></p>
+            <button onclick="closeCustomAlert()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl py-2 font-semibold text-xs transition shadow-md shadow-purple-500/20">OK</button>
+        </div>
+    </div>
+
+    <!-- Task Menu Modal -->
+    <div id="task-menu-modal" class="fixed inset-0 z-50 bg-[#07070a]/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-panel max-w-xs w-full p-4 space-y-2 border border-purple-500/30 text-center">
+            <h4 class="text-sm font-bold text-white mb-3">Task Options</h4>
+            <button onclick="openRenameModal()" class="w-full rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-medium py-2.5 transition flex items-center justify-center gap-2">
+                <i class="fas fa-edit text-purple-400"></i> Rename Task
+            </button>
+            <button onclick="deleteTaskPrompt()" class="w-full rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium py-2.5 transition flex items-center justify-center gap-2">
+                <i class="fas fa-trash-alt"></i> Delete Task
+            </button>
+            <button onclick="closeTaskMenu()" class="w-full rounded-xl bg-transparent hover:bg-white/5 text-gray-400 text-xs py-2 transition">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Subject/Paper Menu Modal -->
+    <div id="subject-menu-modal" class="fixed inset-0 z-50 bg-[#07070a]/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-panel max-w-xs w-full p-4 space-y-2 border border-purple-500/30 text-center">
+            <h4 class="text-sm font-bold text-white mb-3">Paper Options</h4>
+            <button onclick="openSubjRenameModal()" class="w-full rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-medium py-2.5 transition flex items-center justify-center gap-2">
+                <i class="fas fa-edit text-purple-400"></i> Rename Paper
+            </button>
+            <button onclick="deleteSubjectPaperPrompt()" class="w-full rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium py-2.5 transition flex items-center justify-center gap-2">
+                <i class="fas fa-trash-alt"></i> Delete Paper
+            </button>
+            <button onclick="closeSubjectMenu()" class="w-full rounded-xl bg-transparent hover:bg-white/5 text-gray-400 text-xs py-2 transition">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Custom In-App Rename Modal (Tasks) -->
+    <div id="rename-modal" class="fixed inset-0 z-50 bg-[#07070a]/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-panel max-w-sm w-full p-6 space-y-4 border border-purple-500/30 shadow-2xl">
+            <h3 class="text-base font-bold text-white">Rename Task</h3>
+            <input id="rename-input" type="text" class="w-full rounded-xl bg-white/5 border border-purple-500/20 px-3 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeRenameModal()" class="flex-1 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-semibold py-2 text-xs transition">Cancel</button>
+                <button onclick="confirmRenameTask()" class="flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-semibold py-2 text-xs transition">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom In-App Rename Modal (Subjects/Papers) -->
+    <div id="subj-rename-modal" class="fixed inset-0 z-50 bg-[#07070a]/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-panel max-w-sm w-full p-6 space-y-4 border border-purple-500/30 shadow-2xl">
+            <h3 class="text-base font-bold text-white">Rename Paper</h3>
+            <input id="subj-rename-input" type="text" class="w-full rounded-xl bg-white/5 border border-purple-500/20 px-3 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeSubjRenameModal()" class="flex-1 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-semibold py-2 text-xs transition">Cancel</button>
+                <button onclick="confirmRenameSubjPaper()" class="flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-semibold py-2 text-xs transition">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Profile View Modal -->
+    <div id="student-profile-modal" class="fixed inset-0 z-50 bg-[#07070a]/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-panel max-w-sm w-full p-6 space-y-4 border border-purple-500/30 text-center relative">
+            <button onclick="closeStudentProfileModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+            <div class="w-20 h-20 mx-auto">
+                <img id="modal-student-avatar" src="" class="w-20 h-20 rounded-full object-cover border-2 border-purple-500">
+            </div>
+            <h3 id="modal-student-name" class="text-lg font-bold text-white">Student Name</h3>
+            <p id="modal-student-handle" class="text-xs text-purple-400">@handle</p>
+            <div>
+                <span id="modal-student-league" class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">League</span>
+            </div>
+            <p id="modal-student-bio" class="text-xs text-gray-300 italic">Bio here...</p>
+            <div class="text-xs text-gray-400 border-t border-white/10 pt-3">
+                Stream: <span id="modal-student-stream" class="text-purple-300 font-medium">Stream</span>
+            </div>
+            <div class="pt-2">
+                <h4 class="text-xs font-semibold text-white mb-2">Unlocked Badges</h4>
+                <div id="modal-student-badges" class="flex flex-wrap justify-center gap-1.5"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Info Modal -->
+    <div id="leaderboard-info-modal" class="fixed inset-0 z-50 bg-[#07070a]/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-panel max-w-md w-full p-6 space-y-4 border border-purple-500/30 text-left relative max-h-[85vh] overflow-y-auto">
+            <button onclick="closeLeaderboardInfoModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+            <div class="flex items-center gap-2 border-b border-white/10 pb-3">
+                <i class="fas fa-trophy text-amber-400 text-xl"></i>
+                <h3 class="text-base font-bold text-white">How Leaderboard & Seasons Work</h3>
+            </div>
+            <div class="space-y-3 text-xs text-gray-300 leading-relaxed">
+                <div>
+                    <strong class="text-purple-300 block mb-0.5"><i class="fas fa-calendar-alt mr-1"></i> Seasons & Launch Date</strong>
+                    අපගේ යෙදුම දියත් කළ දවසේ සිට හරියටම දවස් 30ක් පුරා එක් සීසන් එකක් ක්‍රියාත්මක වේ (උදා: Season 1). මසින් මසට දින වෙනස් වන අයුරින් ස්වයංක්‍රීයව නව සීසන් ආරම්භ වේ.
+                </div>
+                <div>
+                    <strong class="text-purple-300 block mb-0.5"><i class="fas fa-crown mr-1"></i> Monthly and Yearly Badges</strong>
+                    සෑම මාසයකදීම පළමු ස්ථානයට පත්වන සිසුවාට Season Monthly Master බැජ් එක හිමිවේ. මාස 12ක් පුරා ඉහලින්ම රඳා පවතින සිසුවාට Annual Grand Master වාර්ෂික බැජ් එක හිමි වේ.
+                </div>
+                <div>
+                    <strong class="text-purple-300 block mb-0.5"><i class="fas fa-shield-alt mr-1"></i> Leagues System</strong>
+                    සිසුන් ඔවුන්ගේ අධ්‍යයන පැය ගණන මත පදනම්ව **Iron, Silver, Gold, Diamond, Legendary** යන ලීගයන් හරහා වර්ගීකරණය වේ.
+                </div>
+            </div>
+            <button onclick="closeLeaderboardInfoModal()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl py-2 font-semibold text-xs transition shadow-md shadow-purple-500/20">Got It</button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 glass-panel px-5 py-3 text-sm font-medium text-white opacity-0 pointer-events-none transition-opacity duration-300 z-50 whitespace-nowrap"></div>
+
+    <script>
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyC783heeTZ3m6zvyloFdfhrg8Ayyc8LIzI",
+            authDomain: "escrolls-v2.firebaseapp.com",
+            projectId: "escrolls-v2",
+            storageBucket: "escrolls-v2.firebasestorage.app",
+            messagingSenderId: "1088246273743",
+            appId: "1:1088246273743:web:e5582dd72df475de8989ba",
+            measurementId: "G-13J98SYH2M"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(FIREBASE_CONFIG);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+        let currentUser = null;
+        let currentUserHandle = "";
+        let activeSection = "dashboard";
+        let currentLbTimeframe = "daily";
+
+        let goals = [];
+        let subjectPapers = [];
+        let labelsList = ["General", "Physics", "Maths", "ICT", "Urgent"];
+        let studyHoursData = [0, 0, 0, 0, 0, 0, 0];
+        let selectedTaskIdForMenu = null;
+        let selectedSubjIdForMenu = null;
+        let allLeaderboardStudents = [];
+
+        function hideLoader() {
+            const loader = document.getElementById("app-loader");
+            if (loader) {
+                loader.style.opacity = "0";
+                setTimeout(() => {
+                    loader.style.display = "none";
+                }, 500);
+            }
+        }
+
+        function showCustomAlert(title, message, isError = false) {
+            document.getElementById("alert-title").textContent = title;
+            document.getElementById("alert-message").textContent = message;
+            const iconEl = document.getElementById("alert-icon");
+            if(isError) {
+                iconEl.innerHTML = '<i class="fas fa-exclamation-triangle text-rose-400"></i>';
+            } else {
+                iconEl.innerHTML = '<i class="fas fa-info-circle text-amber-400"></i>';
+            }
+            document.getElementById("custom-alert-modal").classList.remove("hidden");
+        }
+
+        function closeCustomAlert() {
+            document.getElementById("custom-alert-modal").classList.add("hidden");
+        }
+
+        function getCurrentSeasonDetails() {
+            const launchDate = new Date(2026, 10, 1);
+            const now = new Date();
+            const diffMonths = (now.getFullYear() - launchDate.getFullYear()) * 12 + (now.getMonth() - launchDate.getMonth()) + 1;
+            const seasonNum = Math.max(1, diffMonths);
+            const seasonIcons = ["fa-crown", "fa-trophy", "fa-medal", "fa-star", "fa-gem", "fa-fire", "fa-shield-alt", "fa-award", "fa-bolt", "fa-certificate"];
+            const iconClass = seasonIcons[(seasonNum - 1) % seasonIcons.length];
+
+            return {
+                seasonNum: seasonNum,
+                title: `Season ${seasonNum}`,
+                badgeName: `Season ${seasonNum} Monthly Master`,
+                icon: iconClass
+            };
+        }
+
+        const DEFAULT_AVATAR = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a855f7'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
+
+        let stats = [
+            { icon: "fa-check-circle", label: "Goals Done", value: "0/0", change: "0%" },
+            { icon: "fa-hourglass-half", label: "Avg. Study", value: "0.0h", change: "0.0h" }
+        ];
+
+        const navItems = [
+            { id: "dashboard", icon: "fa-chart-pie", label: "Dashboard", href: "#dashboard" },
+            { id: "tasks", icon: "fa-tasks", label: "Tasks", href: "#tasks" },
+            { id: "leaderboard", icon: "fa-trophy", label: "Leaderboard", href: "#leaderboard" },
+            { id: "analytics", icon: "fa-chart-line", label: "Analytics", href: "#analytics" },
+            { id: "profile", icon: "fa-user-circle", label: "Profile", href: "#profile" }
+        ];
+
+        let marksChartInstance = null;
+        let studyChartInstance = null;
+
+        auth.onAuthStateChanged(async user => {
+            const authScreen = document.getElementById("auth-screen");
+            if (user) {
+                currentUser = user;
+                authScreen.classList.add("hidden");
+                
+                const userDoc = await db.collection("users").doc(user.uid).get();
+                const userData = userDoc.exists ? userDoc.data() : {};
+                currentUserHandle = userData.handle || user.email.split('@')[0];
+                const fullName = userData.name || user.displayName || currentUserHandle;
+                const bio = userData.bio || "";
+                const stream = userData.stream || "";
+                const isPublic = userData.isPublic || false;
+                const allowLeaderboard = userData.allowLeaderboard || false;
+                const avatarUrl = (userData.avatar && userData.avatar.startsWith('data:image/')) ? userData.avatar : DEFAULT_AVATAR;
+                if(userData.studyHours) studyHoursData = userData.studyHours;
+                if(userData.customLabels) {
+                    userData.customLabels.forEach(l => {
+                        if(!labelsList.includes(l)) labelsList.push(l);
+                    });
+                }
+
+                document.getElementById("header-username").textContent = "@" + currentUserHandle;
+                document.getElementById("header-avatar").src = avatarUrl;
+                document.getElementById("profile-avatar").src = avatarUrl;
+                document.getElementById("profile-name-display").textContent = fullName;
+                document.getElementById("profile-tag").textContent = "@" + currentUserHandle;
+                document.getElementById("profile-bio-display").textContent = bio || "No bio added yet.";
+                document.getElementById("profile-stream-display").textContent = isPublic ? (stream + " (Public)") : "Private";
+                
+                document.getElementById("profile-name-input").value = fullName !== currentUserHandle ? fullName : "";
+                document.getElementById("profile-handle-input").value = currentUserHandle;
+                document.getElementById("profile-email-input").value = user.email;
+                document.getElementById("profile-bio-input").value = bio;
+                document.getElementById("profile-stream-input").value = stream;
+                document.getElementById("profile-public-stream").checked = isPublic;
+                document.getElementById("profile-allow-leaderboard").checked = allowLeaderboard;
+                
+                if (studyChartInstance) {
+                    studyChartInstance.data.datasets[0].data = studyHoursData;
+                    studyChartInstance.update();
+                }
+                const avg = (studyHoursData.reduce((a, b) => a + b, 0) / studyHoursData.length).toFixed(1);
+                stats[1].value = `${avg}h`;
+                document.getElementById("stats-grid").innerHTML = renderStats(stats);
+
+                await loadUserData(user.uid);
+                await loadLeaderboard();
+                hideLoader();
+            } else {
+                currentUser = null;
+                authScreen.classList.remove("hidden");
+                hideLoader();
+            }
+            renderAll();
+        });
+
+        let isSignUp = false;
+        function toggleAuthMode() {
+            isSignUp = !isSignUp;
+            document.getElementById("auth-title").textContent = isSignUp ? "Create Account" : "Welcome back";
+            document.getElementById("auth-submit-btn").textContent = isSignUp ? "Sign Up" : "Continue";
+            document.getElementById("auth-switch-btn").textContent = isSignUp ? "Already have an account? Sign in" : "Create a new account";
+            document.getElementById("username-field-container").classList.toggle("hidden", !isSignUp);
+            document.getElementById("auth-error-msg").classList.add("hidden");
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById("auth-email").value.trim();
+            const password = document.getElementById("auth-password").value;
+            const handle = document.getElementById("auth-username").value.trim().toLowerCase();
+            const errBox = document.getElementById("auth-error-msg");
+            const errText = document.getElementById("auth-error-text");
+
+            errBox.classList.add("hidden");
+
+            try {
+                if (isSignUp) {
+                    if (!handle) {
+                        errText.textContent = "Please provide a username / handle";
+                        errBox.classList.remove("hidden");
+                        return;
+                    }
+                    const checkHandle = await db.collection("handles").doc(handle).get();
+                    if (checkHandle.exists) {
+                        errText.textContent = "This username is already taken.";
+                        errBox.classList.remove("hidden");
+                        return;
+                    }
+
+                    const res = await auth.createUserWithEmailAndPassword(email, password);
+                    await db.collection("handles").doc(handle).set({ uid: res.user.uid });
+                    await db.collection("users").doc(res.user.uid).set({
+                        email: email,
+                        handle: handle,
+                        name: email.split('@')[0],
+                        bio: "",
+                        stream: "",
+                        isPublic: false,
+                        allowLeaderboard: false,
+                        avatar: DEFAULT_AVATAR,
+                        studyHours: [0,0,0,0,0,0,0],
+                        customLabels: ["General", "Physics", "Maths", "ICT", "Urgent"]
+                    }, { merge: true });
+                    showToast("Account created successfully!");
+                } else {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    showToast("Logged in successfully!");
+                }
+            } catch (error) {
+                let msg = error.message;
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
+                    msg = "Incorrect email or password. Please try again.";
+                } else if (error.code === 'auth/email-already-in-use') {
+                    msg = "This email is already registered.";
+                } else if (error.code === 'auth/weak-password') {
+                    msg = "Password should be at least 6 characters.";
+                }
+                errText.textContent = msg;
+                errBox.classList.remove("hidden");
+            }
+        }
+
+        async function loginWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+                const userDoc = await db.collection("users").doc(user.uid).get();
+                if (!userDoc.exists) {
+                    let handle = user.email.split('@')[0].toLowerCase();
+                    const handleDoc = await db.collection("handles").doc(handle).get();
+                    if(handleDoc.exists) handle = handle + Math.floor(Math.random() * 1000);
+
+                    await db.collection("handles").doc(handle).set({ uid: user.uid });
+                    await db.collection("users").doc(user.uid).set({
+                        email: user.email,
+                        handle: handle,
+                        name: user.displayName || handle,
+                        bio: "",
+                        stream: "",
+                        isPublic: false,
+                        allowLeaderboard: false,
+                        avatar: DEFAULT_AVATAR,
+                        studyHours: [0,0,0,0,0,0,0],
+                        customLabels: ["General", "Physics", "Maths", "ICT", "Urgent"]
+                    }, { merge: true });
+                }
+                showToast("Google login successful!");
+            } catch (err) {
+                showCustomAlert("Authentication Error", err.message, true);
+            }
+        }
+
+        document.getElementById("logout-btn").addEventListener("click", () => auth.signOut());
+
+        async function loadUserData(uid) {
+            try {
+                const [gSnap, sSnap, uSnap] = await Promise.all([
+                    db.collection("users").doc(uid).collection("goals").get(),
+                    db.collection("users").doc(uid).collection("subjectPapers").get(),
+                    db.collection("users").doc(uid).get()
+                ]);
+                goals = [];
+                gSnap.forEach(doc => goals.push({ id: doc.id, ...doc.data() }));
+
+                subjectPapers = [];
+                sSnap.forEach(doc => subjectPapers.push({ id: doc.id, ...doc.data() }));
+
+                if(uSnap.exists && uSnap.data().customLabels) {
+                    labelsList = uSnap.data().customLabels;
+                }
+
+                updateDatalist();
+                renderAll();
+                renderAchievements();
+            } catch (err) { console.error("Error loading user data:", err); }
+        }
+
+        function updateDatalist() {
+            const dl = document.getElementById("labels-datalist");
+            if(dl) dl.innerHTML = labelsList.map(l => `<option value="${l}">`).join("");
+
+            const sdl = document.getElementById("subjects-datalist");
+            if(sdl) {
+                const uniqueSubs = [...new Set(subjectPapers.map(s => s.subjectName))];
+                sdl.innerHTML = uniqueSubs.map(s => `<option value="${s}">`).join("");
+            }
+        }
+
+        function changeStudyTimeframe(type) {
+            if (!studyChartInstance) return;
+            if (type === "7days") {
+                studyChartInstance.data.labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            } else if (type === "monthly") {
+                studyChartInstance.data.labels = ["Week 1", "Week 2", "Week 3", "Week 4"];
+            } else if (type === "yearly") {
+                studyChartInstance.data.labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"];
+            }
+            studyChartInstance.update();
+        }
+
+        function handleLogStudy(e) {
+            e.preventDefault();
+            const dayIndex = parseInt(document.getElementById("study-day-select").value);
+            const hours = parseFloat(document.getElementById("study-hours-input").value);
+
+            if (isNaN(hours)) return;
+
+            studyHoursData[dayIndex] = hours;
+            const avg = (studyHoursData.reduce((a, b) => a + b, 0) / studyHoursData.length).toFixed(1);
+
+            if (currentUser) {
+                db.collection("users").doc(currentUser.uid).set({ 
+                    studyHours: studyHoursData, 
+                    avgStudyHours: parseFloat(avg) 
+                }, { merge: true });
+            }
+
+            if (studyChartInstance) {
+                studyChartInstance.data.datasets[0].data = studyHoursData;
+                studyChartInstance.update();
+            }
+
+            stats[1].value = `${avg}h`;
+            document.getElementById("stats-grid").innerHTML = renderStats(stats);
+
+            document.getElementById("study-hours-input").value = "";
+            showToast("Study hours logged successfully!");
+            loadLeaderboard();
+            renderAchievements();
+        }
+
+        async function handleAddGoal(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const input = document.getElementById("new-goal-title");
+            const labelInput = document.getElementById("new-goal-label");
+            const dateInput = document.getElementById("new-goal-date");
+            
+            const title = input.value.trim();
+            const label = labelInput.value.trim() || "General";
+            const dueDate = dateInput.value || new Date().toISOString().split('T')[0];
+
+            if (!title) return;
+
+            if (!labelsList.includes(label)) {
+                labelsList.push(label);
+                updateDatalist();
+                await db.collection("users").doc(currentUser.uid).set({ customLabels: labelsList }, { merge: true });
+            }
+
+            const newGoal = { title: title, label: label, dueDate: dueDate, done: false };
+            const docRef = await db.collection("users").doc(currentUser.uid).collection("goals").add(newGoal);
+            goals.push({ id: docRef.id, ...newGoal });
+            input.value = "";
+            labelInput.value = "";
+            renderGoalsList();
+            renderAchievements();
+            showToast("Task added!");
+        }
+
+        async function handleAddSubjectPaper(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const nameInput = document.getElementById("subj-name");
+            const paperInput = document.getElementById("paper-name");
+            const marksInput = document.getElementById("subj-marks");
+
+            const subjectName = nameInput.value.trim();
+            const paperName = paperInput.value.trim();
+            const marks = Number(marksInput.value);
+
+            if (!subjectName || !paperName) return;
+
+            const newEntry = { subjectName, paperName, marks, createdAt: Date.now() };
+            const docRef = await db.collection("users").doc(currentUser.uid).collection("subjectPapers").add(newEntry);
+            subjectPapers.push({ id: docRef.id, ...newEntry });
+            
+            nameInput.value = "";
+            paperInput.value = "";
+            marksInput.value = "";
+            updateDatalist();
+            renderSubjectPapersAccordion();
+            updateMarksChart();
+            renderSubjectGrowth();
+            renderAchievements();
+            showToast("Paper marks added successfully!");
+        }
+
+        async function toggleGoalFirebase(goalId, done) {
+            if (!currentUser) return;
+            const goal = goals.find(g => g.id === goalId);
+            if (goal) goal.done = done;
+            try {
+                await db.collection("users").doc(currentUser.uid).collection("goals").doc(goalId).update({ done: done });
+                renderGoalsList();
+                renderAchievements();
+            } catch (err) { console.error(err); }
+        }
+
+        function openTaskMenu(taskId) {
+            selectedTaskIdForMenu = taskId;
+            document.getElementById("task-menu-modal").classList.remove("hidden");
+        }
+
+        function closeTaskMenu() {
+            selectedTaskIdForMenu = null;
+            document.getElementById("task-menu-modal").classList.add("hidden");
+        }
+
+        async function deleteTaskPrompt() {
+            if (!currentUser || !selectedTaskIdForMenu) return;
+            const taskId = selectedTaskIdForMenu;
+            closeTaskMenu();
+            try {
+                await db.collection("users").doc(currentUser.uid).collection("goals").doc(taskId).delete();
+                goals = goals.filter(g => g.id !== taskId);
+                renderGoalsList();
+                renderAchievements();
+                showToast("Task deleted successfully!");
+            } catch (err) { console.error(err); }
+        }
+
+        function openRenameModal() {
+            document.getElementById("task-menu-modal").classList.add("hidden");
+            const goal = goals.find(g => g.id === selectedTaskIdForMenu);
+            if(!goal) return;
+            document.getElementById("rename-input").value = goal.title;
+            document.getElementById("rename-modal").classList.remove("hidden");
+        }
+
+        function closeRenameModal() {
+            document.getElementById("rename-modal").classList.add("hidden");
+        }
+
+        async function confirmRenameTask() {
+            if (!currentUser || !selectedTaskIdForMenu) return;
+            const newTitle = document.getElementById("rename-input").value.trim();
+            if(!newTitle) return;
+
+            const taskId = selectedTaskIdForMenu;
+            closeRenameModal();
+            const goal = goals.find(g => g.id === taskId);
+            if(!goal) return;
+
+            goal.title = newTitle;
+            try {
+                await db.collection("users").doc(currentUser.uid).collection("goals").doc(taskId).update({ title: goal.title });
+                renderGoalsList();
+                showToast("Task renamed successfully!");
+            } catch (err) { console.error(err); }
+        }
+
+        function openSubjectMenu(spId) {
+            selectedSubjIdForMenu = spId;
+            document.getElementById("subject-menu-modal").classList.remove("hidden");
+        }
+
+        function closeSubjectMenu() {
+            selectedSubjIdForMenu = null;
+            document.getElementById("subject-menu-modal").classList.add("hidden");
+        }
+
+        async function deleteSubjectPaperPrompt() {
+            if (!currentUser || !selectedSubjIdForMenu) return;
+            const spId = selectedSubjIdForMenu;
+            closeSubjectMenu();
+            try {
+                await db.collection("users").doc(currentUser.uid).collection("subjectPapers").doc(spId).delete();
+                subjectPapers = subjectPapers.filter(sp => sp.id !== spId);
+                renderSubjectPapersAccordion();
+                updateMarksChart();
+                renderSubjectGrowth();
+                showToast("Paper record deleted successfully!");
+            } catch (err) { console.error(err); }
+        }
+
+        function openSubjRenameModal() {
+            document.getElementById("subject-menu-modal").classList.add("hidden");
+            const sp = subjectPapers.find(s => s.id === selectedSubjIdForMenu);
+            if(!sp) return;
+            document.getElementById("subj-rename-input").value = sp.paperName;
+            document.getElementById("subj-rename-modal").classList.remove("hidden");
+        }
+
+        function closeSubjRenameModal() {
+            document.getElementById("subj-rename-modal").classList.add("hidden");
+        }
+
+        async function confirmRenameSubjPaper() {
+            if (!currentUser || !selectedSubjIdForMenu) return;
+            const newPaperName = document.getElementById("subj-rename-input").value.trim();
+            if(!newPaperName) return;
+
+            const spId = selectedSubjIdForMenu;
+            closeSubjRenameModal();
+            const sp = subjectPapers.find(s => s.id === spId);
+            if(!sp) return;
+
+            sp.paperName = newPaperName;
+            try {
+                await db.collection("users").doc(currentUser.uid).collection("subjectPapers").doc(spId).update({ paperName: sp.paperName });
+                renderSubjectPapersAccordion();
+                updateMarksChart();
+                renderSubjectGrowth();
+                showToast("Paper renamed successfully!");
+            } catch (err) { console.error(err); }
+        }
+
+        function changeLeaderboardTimeframe(tf) {
+            currentLbTimeframe = tf;
+            ['daily', 'weekly', 'yearly'].forEach(type => {
+                const btn = document.getElementById(`lb-btn-${type}`);
+                if(btn) {
+                    if(type === tf) {
+                        btn.className = "px-3 py-1.5 rounded-lg text-purple-300 bg-purple-600/20 font-medium";
+                    } else {
+                        btn.className = "px-3 py-1.5 rounded-lg text-gray-400 hover:text-white";
+                    }
+                }
+            });
+            loadLeaderboard();
+        }
+
+        function openLeaderboardInfoModal() {
+            document.getElementById("leaderboard-info-modal").classList.remove("hidden");
+        }
+
+        function closeLeaderboardInfoModal() {
+            document.getElementById("leaderboard-info-modal").classList.add("hidden");
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const snapshot = await db.collection("users").where("allowLeaderboard", "==", true).get();
+                let list = [];
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    let hours = d.avgStudyHours || 0.0;
+                    if(currentLbTimeframe === "weekly") hours = (hours * 7).toFixed(1);
+                    if(currentLbTimeframe === "yearly") hours = (hours * 365).toFixed(1);
+                    
+                    list.push({
+                        uid: doc.id,
+                        name: d.name || d.handle,
+                        handle: d.handle,
+                        bio: d.bio || "No bio added yet.",
+                        stream: d.isPublic ? (d.stream || "General") : "Private",
+                        avatar: d.avatar || DEFAULT_AVATAR,
+                        hours: parseFloat(hours),
+                        isTop1: false
+                    });
+                });
+
+                list.sort((a, b) => b.hours - a.hours);
+                if(list.length > 0) list[0].isTop1 = true;
+                allLeaderboardStudents = list;
+
+                const seasonInfo = getCurrentSeasonDetails();
+                document.getElementById("season-banner-text").innerHTML = `<i class="fas ${seasonInfo.icon} text-amber-400 mr-1"></i> Active ${seasonInfo.title} (Monthly Competition)`;
+
+                const table = document.getElementById("leaderboard-table");
+                if (list.length === 0) {
+                    table.innerHTML = `<tr><td colspan="4" class="text-center text-gray-500 py-4 text-xs">No active opted-in competitors yet.</td></tr>`;
+                    return;
+                }
+
+                table.innerHTML = list.map((item, index) => {
+                    let badgeClass = "bg-gray-500/20 text-gray-300 border-gray-500/30";
+                    let badgeName = "Iron";
+                    if(index === 0) { badgeClass = "bg-amber-500/20 text-amber-300 border-amber-500/40"; badgeName = "Legendary"; }
+                    else if(index < 3) { badgeClass = "bg-purple-500/20 text-purple-300 border-purple-500/40"; badgeName = "Diamond"; }
+                    else if(index < 5) { badgeClass = "bg-blue-500/20 text-blue-300 border-blue-500/40"; badgeName = "Gold"; }
+                    else if(index < 10) { badgeClass = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"; badgeName = "Silver"; }
+
+                    if(currentUser && item.uid === currentUser.uid) {
+                        const profileBadgeEl = document.getElementById("profile-league-badge");
+                        if(profileBadgeEl) {
+                            profileBadgeEl.innerHTML = `<i class="fas fa-shield-alt mr-1"></i> ${badgeName} League (#${index+1})`;
+                        }
+                    }
+
+                    return `
+                    <tr onclick="openStudentProfileModal('${item.uid}')" class="border-b border-white/5 hover:bg-white/5 cursor-pointer transition">
+                        <td class="py-3.5 px-3">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold ${index === 0 ? 'text-amber-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-amber-600' : 'text-gray-400'}">#${index + 1}</span>
+                                <span class="px-2.5 py-1 rounded-md text-xs font-semibold border ${badgeClass}">${badgeName}</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-3 font-semibold text-white flex items-center gap-2.5">
+                            <img src="${item.avatar}" class="w-7 h-7 rounded-full object-cover">
+                            ${item.name}
+                        </td>
+                        <td class="py-3.5 px-3 text-xs text-gray-300">${item.stream}</td>
+                        <td class="py-3.5 px-3 text-right font-bold text-purple-400">${item.hours} hrs</td>
+                    </tr>
+                `}).join("");
+            } catch (err) { console.error("Error loading leaderboard:", err); }
+        }
+
+        function openStudentProfileModal(uid) {
+            const student = allLeaderboardStudents.find(s => s.uid === uid);
+            if(!student) return;
+
+            document.getElementById("modal-student-avatar").src = student.avatar;
+            document.getElementById("modal-student-name").textContent = student.name;
+            document.getElementById("modal-student-handle").textContent = "@" + student.handle;
+            document.getElementById("modal-student-bio").textContent = student.bio;
+            document.getElementById("modal-student-stream").textContent = student.stream;
+            document.getElementById("modal-student-league").textContent = student.isTop1 ? "Monthly Master & Legendary" : "Active Competitor";
+
+            let badgesHtml = `
+                <span class="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 text-xs border border-purple-500/30 flex items-center gap-1"><i class="fas fa-book-reader"></i> Scholar</span>
+            `;
+            if(student.isTop1) {
+                const seasonInfo = getCurrentSeasonDetails();
+                badgesHtml += `<span class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 text-xs border border-amber-500/30 flex items-center gap-1"><i class="fas ${seasonInfo.icon}"></i> ${seasonInfo.badgeName}</span>`;
+            }
+            document.getElementById("modal-student-badges").innerHTML = badgesHtml;
+            document.getElementById("student-profile-modal").classList.remove("hidden");
+        }
+
+        function closeStudentProfileModal() {
+            document.getElementById("student-profile-modal").classList.add("hidden");
+        }
+
+        function renderAchievements() {
+            const container = document.getElementById("achievements-grid");
+            if (!container) return;
+
+            const totalStudy = studyHoursData.reduce((a, b) => a + b, 0);
+            const doneGoals = goals.filter(g => g.done).length;
+            const uniqueSubsCount = [...new Set(subjectPapers.map(s => s.subjectName))].length;
+            const isTop1 = allLeaderboardStudents.length > 0 && allLeaderboardStudents[0].uid === currentUser?.uid;
+            const seasonInfo = getCurrentSeasonDetails();
+
+            const achList = [
+                { title: "Scholar", desc: "Study 20+ hours total", unlocked: totalStudy >= 20, icon: "fa-book-reader" },
+                { title: "Task Titan", desc: "Complete 10 tasks", unlocked: doneGoals >= 10, icon: "fa-tasks" },
+                { title: "Dedicated", desc: "Study 50+ hours total", unlocked: totalStudy >= 50, icon: "fa-fire" },
+                { title: "Subject Mastery", desc: "Add 3+ subjects", unlocked: uniqueSubsCount >= 3, icon: "fa-brain" },
+                { title: seasonInfo.badgeName, desc: "Rank #1 in current season", unlocked: isTop1, icon: seasonInfo.icon },
+                { title: "Annual Grand Master", desc: "12 Months Leaderboard Champion", unlocked: false, icon: "fa-gem" }
+            ];
+
+            const unlockedList = achList.filter(a => a.unlocked);
+
+            if(unlockedList.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-4 col-span-2">No major badges unlocked yet. Complete study hours & tasks!</p>`;
+                return;
+            }
+
+            container.innerHTML = unlockedList.map(a => `
+                <div class="p-3 rounded-xl border bg-purple-500/10 border-purple-500/30 text-white flex flex-col items-center justify-center text-center">
+                    <i class="fas ${a.icon} text-xl text-purple-400 mb-1.5"></i>
+                    <p class="text-xs font-semibold">${a.title}</p>
+                    <p class="text-[10px] opacity-75 mt-0.5">${a.desc}</p>
+                </div>
+            `).join("");
+        }
+
+        function renderSubjectPapersAccordion() {
+            const container = document.getElementById("subjects-accordion");
+            if(!container) return;
+
+            if(subjectPapers.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">No subject papers added yet.</p>`;
+                return;
+            }
+
+            let groups = {};
+            subjectPapers.forEach(sp => {
+                if(!groups[sp.subjectName]) groups[sp.subjectName] = [];
+                groups[sp.subjectName].push(sp);
+            });
+
+            container.innerHTML = Object.keys(groups).map(subj => `
+                <div class="glass-card p-3 space-y-2">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
+                        <span class="text-xs font-bold text-purple-300"><i class="fas fa-book mr-1.5"></i>${subj}</span>
+                        <span class="text-[10px] text-gray-400">${groups[subj].length} papers</span>
+                    </div>
+                    <div class="space-y-1.5 pl-2">
+                        ${groups[subj].map(p => `
+                            <div class="flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-white/5 hover:bg-white/10">
+                                <span class="text-gray-200">${p.paperName}</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="font-semibold text-purple-400">${p.marks}%</span>
+                                    <button onclick="openSubjectMenu('${p.id}')" class="text-gray-400 hover:text-white px-1"><i class="fas fa-ellipsis-v text-[10px]"></i></button>
+                                </div>
+                            </div>
+                        `).join("")}
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        function renderSubjectGrowth() {
+            const container = document.getElementById("subject-growth-container");
+            if(!container) return;
+
+            if(subjectPapers.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-4 col-span-2">No growth data available yet.</p>`;
+                return;
+            }
+
+            let groups = {};
+            subjectPapers.forEach(sp => {
+                if(!groups[sp.subjectName]) groups[sp.subjectName] = [];
+                groups[sp.subjectName].push(sp);
+            });
+
+            container.innerHTML = Object.keys(groups).map(subj => {
+                let papers = groups[subj];
+                let latestMarks = papers[papers.length - 1].marks;
+                let firstMarks = papers[0].marks;
+                let diff = latestMarks - firstMarks;
+                let diffStr = diff >= 0 ? `+${diff}%` : `${diff}%`;
+                let diffColor = diff >= 0 ? "text-emerald-400" : "text-rose-400";
+
+                return `
+                    <div class="glass-card p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-bold text-white">${subj}</h4>
+                            <span class="text-xs font-semibold ${diffColor}"><i class="fas fa-chart-line mr-1"></i>${diffStr} growth</span>
+                        </div>
+                        <div class="space-y-1">
+                            ${papers.slice(-3).map(p => `
+                                <div class="flex justify-between text-[11px] text-gray-300">
+                                    <span>${p.paperName}</span>
+                                    <span class="font-medium text-purple-300">${p.marks}%</span>
+                                </div>
+                                <div class="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full" style="width: ${p.marks}%"></div>
+                                </div>
+                            `).join("")}
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function renderGoalsList() {
+            const container = document.getElementById("goals-list");
+            if (!container) return;
+            const doneCount = goals.filter(g => g.done).length;
+            stats[0].value = `${doneCount}/${goals.length}`;
+            stats[0].change = goals.length > 0 ? `${Math.round((doneCount/goals.length)*100)}%` : '0%';
+            document.getElementById("stats-grid").innerHTML = renderStats(stats);
+            document.getElementById("tasks-count").textContent = `${goals.length} Tasks`;
+
+            if (goals.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">No tasks added yet.</p>`;
+                return;
+            }
+
+            const groupBy = document.getElementById("task-group-by") ? document.getElementById("task-group-by").value : "none";
+
+            if (groupBy === "none") {
+                container.innerHTML = goals.map(goal => renderSingleTaskCard(goal)).join("");
+            } else {
+                let groups = {};
+                goals.forEach(goal => {
+                    const key = groupBy === "date" ? (goal.dueDate || "No Date") : (goal.label || "General");
+                    if(!groups[key]) groups[key] = [];
+                    groups[key].push(goal);
+                });
+
+                container.innerHTML = Object.keys(groups).map(groupKey => `
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-bold text-purple-400 border-b border-white/10 pb-1 flex items-center gap-1.5">
+                            <i class="${groupBy === 'date' ? 'fas fa-calendar-alt' : 'fas fa-tag'} text-[10px]"></i> ${groupKey}
+                        </h4>
+                        <div class="space-y-2">
+                            ${groups[groupKey].map(g => renderSingleTaskCard(g)).join("")}
+                        </div>
+                    </div>
+                `).join("");
+            }
+        }
+
+        function renderSingleTaskCard(goal) {
+            return `
+                <div class="flex items-center justify-between glass-card p-3 transition hover:bg-white/5 group">
+                    <label class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                        <input type="checkbox" data-goal-id="${goal.id}" class="h-4 w-4 rounded border-gray-500 text-purple-600 focus:ring-purple-500/40 cursor-pointer" ${goal.done ? 'checked' : ''}>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium ${goal.done ? 'line-through text-gray-500' : 'text-gray-100 group-hover:text-purple-300'} truncate">${goal.title}</p>
+                            <div class="flex gap-2 mt-1 items-center text-[10px]">
+                                <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">${goal.label || 'General'}</span>
+                                <span class="text-gray-400"><i class="fas fa-clock mr-1"></i>${goal.dueDate || 'No Date'}</span>
+                            </div>
+                        </div>
+                    </label>
+                    <button onclick="openTaskMenu('${goal.id}')" class="text-gray-400 hover:text-white px-2 py-1 rounded-lg transition" title="Options">
+                        <i class="fas fa-ellipsis-v text-xs"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderNav(items) {
+            return items.map(item => `
+                <li>
+                    <a href="${item.href}" data-nav="${item.id}"
+                       class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition ${activeSection === item.id ? 'bg-purple-600/20 text-purple-300 border border-purple-500/35' : 'text-gray-300 hover:bg-white/5 hover:text-white'}">
+                        <i class="fas ${item.icon}"></i>
+                        <span class="hidden lg:inline">${item.label}</span>
+                    </a>
+                </li>
+            `).join("");
+        }
+
+        function renderMobileNav(items) {
+            return items.map(item => `
+                <li>
+                    <a href="${item.href}" data-nav="${item.id}" aria-label="${item.label}"
+                       class="flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-2xl transition ${activeSection === item.id ? 'text-purple-300 bg-purple-600/20' : 'text-gray-400'}">
+                        <i class="fas ${item.icon} text-lg"></i>
+                        <span class="text-[10px] font-medium">${item.label}</span>
+                    </a>
+                </li>
+            `).join("");
+        }
+
+        function renderStats(items) {
+            return items.map(item => `
+                <div class="glass-card p-4 flex items-start justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400">${item.label}</p>
+                        <p class="text-2xl font-bold mt-1 text-white">${item.value}</p>
+                        <p class="text-xs mt-1 text-purple-400">${item.change}</p>
+                    </div>
+                    <i class="fas ${item.icon} text-2xl text-purple-400/70"></i>
+                </div>
+            `).join("");
+        }
+
+        function updateMarksChart() {
+            if (!marksChartInstance) return;
+
+            let groups = {};
+            subjectPapers.forEach(sp => {
+                if(!groups[sp.subjectName]) groups[sp.subjectName] = [];
+                groups[sp.subjectName].push(sp.marks);
+            });
+
+            let labels = Object.keys(groups);
+            let data = labels.map(subj => {
+                let marksArr = groups[subj];
+                let recentMarks = marksArr.slice(-3);
+                let sum = recentMarks.reduce((a, b) => a + b, 0);
+                return (sum / recentMarks.length).toFixed(1);
+            });
+
+            if(labels.length === 0) {
+                labels = ["No Subject"];
+                data = [0];
+            }
+
+            marksChartInstance.data.labels = labels;
+            marksChartInstance.data.datasets[0].data = data;
+            marksChartInstance.update();
+        }
+
+        function renderAll() {
+            document.getElementById("desktop-nav").innerHTML = renderNav(navItems);
+            document.getElementById("mobile-nav").innerHTML = renderMobileNav(navItems);
+            renderGoalsList();
+            renderSubjectPapersAccordion();
+            renderSubjectGrowth();
+            updateMarksChart();
+        }
+
+        function showSection(id) {
+            ['dashboard', 'tasks', 'leaderboard', 'analytics', 'profile'].forEach(sid => {
+                const el = document.getElementById(sid);
+                if(el) el.classList.toggle("hidden", sid !== id);
+            });
+            activeSection = id;
+            document.getElementById("desktop-nav").innerHTML = renderNav(navItems);
+            document.getElementById("mobile-nav").innerHTML = renderMobileNav(navItems);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            toast.textContent = msg;
+            toast.classList.remove("opacity-0", "pointer-events-none");
+            setTimeout(() => toast.classList.add("opacity-0", "pointer-events-none"), 3000);
+        }
+
+        document.addEventListener("click", (e) => {
+            const navLink = e.target.closest("a[data-nav]");
+            if (navLink) {
+                e.preventDefault();
+                showSection(navLink.getAttribute("href").slice(1));
+            }
+        });
+
+        document.addEventListener("change", (e) => {
+            const goalToggle = e.target.closest("input[data-goal-id]");
+            if (goalToggle) {
+                toggleGoalFirebase(goalToggle.dataset.goalId, goalToggle.checked);
+            }
+        });
+
+        async function uploadProfilePicture(e) {
+            const file = e.target.files[0];
+            if(!file || !currentUser) return;
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const base64Img = event.target.result;
+                try {
+                    await db.collection("users").doc(currentUser.uid).set({ avatar: base64Img }, { merge: true });
+                    document.getElementById("profile-avatar").src = base64Img;
+                    document.getElementById("header-avatar").src = base64Img;
+                    showToast("Profile picture updated!");
+                    loadLeaderboard();
+                } catch(err) { showCustomAlert("Upload Error", err.message, true); }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function handleSaveProfile(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            const newName = document.getElementById("profile-name-input").value.trim();
+            const newHandle = document.getElementById("profile-handle-input").value.trim().toLowerCase();
+            const newBio = document.getElementById("profile-bio-input").value.trim();
+            const newStream = document.getElementById("profile-stream-input").value.trim();
+            const isPublic = document.getElementById("profile-public-stream").checked;
+            const allowLeaderboard = document.getElementById("profile-allow-leaderboard").checked;
+
+            if (newHandle !== currentUserHandle) {
+                const handleCheck = await db.collection("handles").doc(newHandle).get();
+                if (handleCheck.exists) {
+                    showCustomAlert("Username Taken", "This username is already taken by another student.", true);
+                    return;
+                }
+                await db.collection("handles").doc(newHandle).set({ uid: currentUser.uid });
+                if(currentUserHandle) {
+                    await db.collection("handles").doc(currentUserHandle).delete().catch(()=>{});
+                }
+                currentUserHandle = newHandle;
+            }
+
+            try {
+                await db.collection("users").doc(currentUser.uid).set({
+                    email: currentUser.email,
+                    name: newName || currentUserHandle,
+                    handle: currentUserHandle,
+                    bio: newBio,
+                    stream: newStream,
+                    isPublic: isPublic,
+                    allowLeaderboard: allowLeaderboard
+                }, { merge: true });
+
+                document.getElementById("header-username").textContent = "@" + currentUserHandle;
+                document.getElementById("profile-name-display").textContent = newName || currentUserHandle;
+                document.getElementById("profile-tag").textContent = "@" + currentUserHandle;
+                document.getElementById("profile-bio-display").textContent = newBio || "No bio added yet.";
+                document.getElementById("profile-stream-display").textContent = isPublic ? (newStream + " (Public)") : "Private";
+
+                const saveBtn = document.getElementById("profile-save-btn");
+                const originalText = saveBtn.textContent;
+                saveBtn.textContent = "Saved! ✓";
+                saveBtn.classList.add("bg-emerald-600");
+                setTimeout(() => {
+                    saveBtn.textContent = originalText;
+                    saveBtn.classList.remove("bg-emerald-600");
+                }, 2000);
+
+                showToast("Profile updated successfully!");
+                loadLeaderboard();
+                renderAchievements();
+            } catch (err) {
+                showCustomAlert("Error", err.message, true);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const dateInputEl = document.getElementById("new-goal-date");
+            if(dateInputEl) dateInputEl.value = todayStr;
+
+            studyChartInstance = new Chart(document.getElementById("studyChart"), {
+                type: "line",
+                data: {
+                    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+                    datasets: [{
+                        label: "Study Hours",
+                        data: studyHoursData,
+                        borderColor: "#a855f7",
+                        backgroundColor: "rgba(168, 85, 247, 0.1)",
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: "#a855f7"
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: "rgba(255,255,255,0.05)" }, ticks: { color: "#9ca3af" } },
+                        x: { grid: { display: false }, ticks: { color: "#9ca3af" } }
+                    }
+                }
+            });
+
+            marksChartInstance = new Chart(document.getElementById("marksChart"), {
+                type: "radar",
+                data: { 
+                    labels: ["No Subject"], 
+                    datasets: [{ 
+                        label: "Performance",
+                        data: [0], 
+                        borderColor: "#a855f7", 
+                        backgroundColor: "rgba(168, 85, 247, 0.25)",
+                        pointBackgroundColor: "#a855f7"
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        r: {
+                            grid: { color: "rgba(255,255,255,0.1)" },
+                            angleLines: { color: "rgba(255,255,255,0.1)" },
+                            ticks: { display: false, max: 100 }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
